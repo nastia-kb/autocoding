@@ -18,9 +18,6 @@ import os
 from pass1_topic_discovery import discover_topics
 from pass2_classification import classify_all
 
-# Access them using os.getenv
-cl_api_key = os.getenv("API_KEY")
-
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Автокодировка", layout="wide")
 st.title("Автокодировка открытых ответов")
