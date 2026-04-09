@@ -18,8 +18,6 @@ import os
 from pass1_topic_discovery import discover_topics
 from pass2_classification import classify_all
 
-load_dotenv()
-
 # Access them using os.getenv
 cl_api_key = os.getenv("API_KEY")
 
