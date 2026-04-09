@@ -21,7 +21,7 @@ from pass2_classification import classify_all
 load_dotenv()
 
 # Access them using os.getenv
-cl_api_key = os.getenv("ANTHROPIC_API_KEY")
+cl_api_key = os.getenv("API_KEY")
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Автокодировка", layout="wide")

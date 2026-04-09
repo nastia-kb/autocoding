@@ -10,7 +10,7 @@ import os
 
 load_dotenv()
 
-cl_api_key = os.getenv("ANTHROPIC_API_KEY")
+cl_api_key = os.getenv("API_KEY")
 
 client = anthropic.Anthropic(api_key=cl_api_key)  # reads ANTHROPIC_API_KEY from environment
 
