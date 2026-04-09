@@ -7,6 +7,7 @@ Supports single-response and batched processing.
 import json
 import anthropic
 from dataclasses import dataclass, field, asdict
+import streamlit as st
 
 from dotenv import load_dotenv
 import os
