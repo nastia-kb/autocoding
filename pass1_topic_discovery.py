@@ -5,8 +5,14 @@ Reads a sample of survey responses and returns a canonical list of topics.
 
 import json
 import anthropic
+from dotenv import load_dotenv
+import os
 
-client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from environment
+load_dotenv()
+
+cl_api_key = os.getenv("ANTHROPIC_API_KEY")
+
+client = anthropic.Anthropic(api_key=cl_api_key)  # reads ANTHROPIC_API_KEY from environment
 
 
 def discover_topics(
@@ -56,15 +62,17 @@ Guidelines:
 - Topics should be specific enough to be meaningful, broad enough to cover multiple responses.
 - Each topic needs a short snake_case id (e.g. "pricing_concerns"), a human-readable label,
   and a one-sentence description of what responses in this topic typically say.
+- Human-readable lable and desription should be in russian.
 - Topics must be mutually exclusive where possible; a response may still match several.
+- Don't analyze empty, meaningless or off-topic responses
 
 Respond with this exact JSON structure:
 {{
   "topics": [
     {{
       "id": "snake_case_id",
-      "label": "Human Readable Label",
-      "description": "One sentence describing what this topic covers."
+      "label": "Название темы человеческим языком",
+      "description": "Одно предложение, описывающее содержание темы"
     }}
   ],
   "model_notes": "Any caveats, ambiguities, or suggestions for the analyst."

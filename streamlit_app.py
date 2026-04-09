@@ -4,20 +4,28 @@ Combines Pass 1 (topic discovery) and Pass 2 (classification) in one UI.
 
 Run with:  streamlit run streamlit_app.py
 Requires:  pip install anthropic streamlit pandas
-           export ANTHROPIC_API_KEY=sk-...
+export ANTHROPIC_API_KEY=sk-...
 """
 
 import json
 import pandas as pd
 import streamlit as st
 from dataclasses import asdict
+import io
+from dotenv import load_dotenv
+import os
 
 from pass1_topic_discovery import discover_topics
 from pass2_classification import classify_all
 
+load_dotenv()
+
+# Access them using os.getenv
+cl_api_key = os.getenv("ANTHROPIC_API_KEY")
+
 # ── Page config ──────────────────────────────────────────────────────────────
-st.set_page_config(page_title="Survey Topic Analyser", layout="wide")
-st.title("Survey Topic Analyser")
+st.set_page_config(page_title="Автокодировка", layout="wide")
+st.title("Автокодировка открытых ответов")
 
 # ── Session state defaults ────────────────────────────────────────────────────
 for key, default in {
@@ -29,40 +37,39 @@ for key, default in {
         st.session_state[key] = default
 
 # ── Step 1: Upload ────────────────────────────────────────────────────────────
-st.header("1 · Upload responses")
+st.header("1 · Загрузите файл с открытыми ответами")
 
 question_context = st.text_input(
-    "Survey question (optional — helps the model understand context)",
-    placeholder="e.g. What could we improve about your experience?",
+    "Формулировка вопроса (по желанию - помогает модели лучше понять контекст)",
+    placeholder="например, что именно вам понравилось в рекламе?",
 )
 
 uploaded_file = st.file_uploader(
-    "Upload a CSV file. The column containing responses will be auto-detected,\n"
-    "or you can choose it below.",
-    type=["csv"],
+    "Загрузите файл Excel. Формат - только столбцы с открытыми ответами",
+    type=["xlsx"],
 )
 
 if uploaded_file:
-    df_raw = pd.read_csv(uploaded_file)
-    st.write(f"Loaded **{len(df_raw)} rows**, **{len(df_raw.columns)} columns**.")
+    df_raw = pd.read_excel(uploaded_file)
+    st.write(f"Загружено **{len(df_raw)} строк**, **{len(df_raw.columns)} столбцов**.")
 
-    text_col = st.selectbox("Column containing open-ended responses", df_raw.columns)
+    text_col = st.selectbox("Столбцы с открытыми ответами", df_raw.columns)
     responses = df_raw[text_col].dropna().astype(str).tolist()
     st.session_state["responses"] = responses
-    st.write(f"Using **{len(responses)} non-empty responses**.")
+    st.write(f"Используем **{len(responses)} не пустых ответов**.")
 
-    with st.expander("Preview responses"):
+    with st.expander("Посмотреть ответы"):
         st.dataframe(df_raw[[text_col]].head(10))
 
 # ── Step 2: Topic Discovery ───────────────────────────────────────────────────
-st.header("2 · Discover topics (Pass 1)")
+st.header("2 · Выделение тематик")
 
 col1, col2 = st.columns(2)
-sample_size  = col1.slider("Responses to sample for discovery", 10, 200, 50)
-max_topics   = col2.slider("Max topics to generate", 5, 20, 12)
+sample_size  = col1.slider("Сколько ответов использовать в подвыборке для выделения тематик?", 10, 200, 50)
+max_topics   = col2.slider("Максимальное количество тематик", 5, 30, 15)
 
-if st.button("Run topic discovery", disabled=not st.session_state["responses"]):
-    with st.spinner("Analysing responses with Claude Sonnet…"):
+if st.button("Начать поиск тем", disabled=not st.session_state["responses"]):
+    with st.spinner("Анализ ответов с помощью Claude Sonnet…"):
         result = discover_topics(
             responses=st.session_state["responses"],
             sample_size=sample_size,
@@ -70,14 +77,12 @@ if st.button("Run topic discovery", disabled=not st.session_state["responses"]):
             question_context=question_context,
         )
     st.session_state["topics"] = result["topics"]
-    if result.get("model_notes"):
-        st.info(f"Model notes: {result['model_notes']}")
-    st.success(f"Discovered {len(result['topics'])} topics.")
+    st.success(f"Найдено {len(result['topics'])} тематик.")
 
 # Show editable topic list
 if st.session_state["topics"]:
-    st.subheader("Review & edit topics")
-    st.caption("Rename labels or descriptions before running classification. Remove rows to drop a topic.")
+    st.subheader("Просмотр и редактирование тематик")
+    st.caption("Можно скорректировать названия тем или удалить ненужные")
 
     topics_df = pd.DataFrame(st.session_state["topics"])
     edited = st.data_editor(
@@ -95,19 +100,19 @@ if st.session_state["topics"]:
 
     # Download topic list
     st.download_button(
-        "Download topic list (JSON)",
+        "Скачать описание тематик (JSON)",
         data=json.dumps({"topics": st.session_state["topics"]}, indent=2),
         file_name="topics.json",
         mime="application/json",
     )
 
 # ── Step 3: Classification ────────────────────────────────────────────────────
-st.header("3 · Classify responses (Pass 2)")
+st.header("3 · Классификация ответов")
 
-batch_size = st.slider("Responses per API call (higher = fewer calls, same cost)", 5, 20, 10)
+batch_size = 20
 
 if st.button(
-    "Run classification",
+    "Запустить классификацию",
     disabled=not (st.session_state["topics"] and st.session_state["responses"]),
 ):
     progress_bar = st.progress(0, text="Starting…")
@@ -115,9 +120,9 @@ if st.button(
 
     def update_progress(current, total):
         pct = current / total
-        progress_bar.progress(pct, text=f"Classified {current} / {total} responses…")
+        progress_bar.progress(pct, text=f"Классифицировано {current} / {total} ответов...")
 
-    with st.spinner("Classifying with Claude Haiku…"):
+    with st.spinner("Классификация с помощью Claude Haiku…"):
         results = classify_all(
             raw_texts=st.session_state["responses"],
             topics=st.session_state["topics"],
@@ -125,13 +130,13 @@ if st.button(
             progress_callback=update_progress,
         )
 
-    progress_bar.progress(1.0, text="Done!")
+    progress_bar.progress(1.0, text="Готово!")
     st.session_state["results"] = results
-    st.success(f"Classified {len(results)} responses.")
+    st.success(f"Классифицировано {len(results)} ответов.")
 
 # ── Step 4: Results ───────────────────────────────────────────────────────────
 if st.session_state["results"]:
-    st.header("4 · Results")
+    st.header("4 · Результаты")
 
     results = st.session_state["results"]
     rows = [asdict(r) for r in results]
@@ -158,21 +163,20 @@ if st.session_state["results"]:
     else:
         df_display = df_results
 
-    st.write(f"Showing **{len(df_display)}** responses.")
+    st.write(f"Показано **{len(df_display)}** ответов.")
     st.dataframe(
-        df_display[["response_id", "original_text", "topics_display", "confidence", "summary"]],
+        df_display[["response_id", "original_text", "topics_display", "confidence"]],
         use_container_width=True,
         column_config={
             "response_id":    st.column_config.NumberColumn("ID", width="small"),
-            "original_text":  st.column_config.TextColumn("Response", width="large"),
-            "topics_display": st.column_config.TextColumn("Topics"),
-            "confidence":     st.column_config.TextColumn("Confidence", width="small"),
-            "summary":        st.column_config.TextColumn("Summary", width="large"),
+            "Текст":  st.column_config.TextColumn("Response", width="large"),
+            "Темы": st.column_config.TextColumn("Topics"),
+            "Уровень уверенности":     st.column_config.TextColumn("Confidence", width="small")
         },
     )
 
     # Topic frequency chart
-    st.subheader("Topic frequency")
+    st.subheader("Частота тематик")
     from collections import Counter
     all_assigned = [
         topic_labels.get(t, t)
@@ -183,9 +187,13 @@ if st.session_state["results"]:
     st.bar_chart(freq.set_index("Topic"))
 
     # Download results
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        df_results.to_excel(writer)
+        writer.close()
+
     st.download_button(
-        "Download results (CSV)",
-        data=df_results.to_csv(index=False),
-        file_name="classified_responses.csv",
-        mime="text/csv",
-    )
+        "Скачать результаты",
+        data=buffer,
+        file_name="autocoding.xlsx",
+        mime="application/vnd.ms-excel")

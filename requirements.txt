@@ -1,3 +1,5 @@
 anthropic 
 streamlit 
 pandas
+openpyxl
+dotenv

@@ -8,7 +8,13 @@ import json
 import anthropic
 from dataclasses import dataclass, field, asdict
 
-client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from environment
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+cl_api_key = os.getenv("ANTHROPIC_API_KEY")
+client = anthropic.Anthropic(api_key=cl_api_key)  # reads ANTHROPIC_API_KEY from environment
 
 
 @dataclass
@@ -16,8 +22,7 @@ class ClassifiedResponse:
     response_id: int | str
     original_text: str
     assigned_topics: list[str]          # list of topic ids
-    confidence: str                     # "high" | "medium" | "low"
-    summary: str                        # one-sentence summary
+    confidence: str                     # "high" | "medium" | "low"                    
     error: str | None = field(default=None)
 
 
@@ -69,8 +74,7 @@ TOPIC LIST:
 
 INSTRUCTIONS:
 - Assign 1–4 topic ids per response (use only ids from the list above).
-- Set confidence to "high", "medium", or "low".
-- Write a one-sentence summary of what the respondent said.
+- Set confidence to "Высокое", "Среднее", or "Низкое".
 - If a response is blank, off-topic, or unclassifiable, assign an empty topics
   list and confidence "low".
 
@@ -79,8 +83,7 @@ Return a JSON array — one object per response, in the same order:
   {{
     "id": <response id>,
     "assigned_topics": ["topic_id_1", "topic_id_2"],
-    "confidence": "high",
-    "summary": "One sentence."
+    "confidence": "high"
   }},
   ...
 ]
@@ -115,8 +118,7 @@ RESPONSES TO CLASSIFY:
                         response_id=original["id"],
                         original_text=original["text"],
                         assigned_topics=valid_topics,
-                        confidence=item.get("confidence", "low"),
-                        summary=item.get("summary", ""),
+                        confidence=item.get("confidence", "low")
                     )
                 )
 
@@ -129,7 +131,6 @@ RESPONSES TO CLASSIFY:
                         original_text=original["text"],
                         assigned_topics=[],
                         confidence="low",
-                        summary="",
                         error=str(e),
                     )
                 )
@@ -204,7 +205,6 @@ if __name__ == "__main__":
     for r in results:
         topics_str = ", ".join(r.assigned_topics) if r.assigned_topics else "(none)"
         print(f"  [{r.response_id}] [{r.confidence}] Topics: {topics_str}")
-        print(f"         Summary: {r.summary}")
         if r.error:
             print(f"         ERROR: {r.error}")
 
