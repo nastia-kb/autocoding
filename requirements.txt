@@ -1,5 +1,5 @@
 anthropic 
 streamlit 
 pandas
-openpyxl
+xlsxwriter
 dotenv
