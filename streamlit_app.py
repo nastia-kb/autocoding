@@ -49,7 +49,8 @@ if uploaded_file:
     st.write(f"Загружено **{len(df_raw)} строк**, **{len(df_raw.columns)} столбцов**.")
 
     text_col = st.selectbox("Столбцы с открытыми ответами", df_raw.columns)
-    responses = df_raw[text_col].dropna().astype(str).tolist()
+    responses = df_raw[text_col].dropna()
+    responses = responses[responses.str.len() >= 2].astype(str).tolist()
     st.session_state["responses"] = responses
     st.write(f"Используем **{len(responses)} не пустых ответов**.")
 

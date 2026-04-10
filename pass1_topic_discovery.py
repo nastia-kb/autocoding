@@ -5,14 +5,10 @@ Reads a sample of survey responses and returns a canonical list of topics.
 
 import json
 import anthropic
-from dotenv import load_dotenv
 import os
 import streamlit as st
 
-load_dotenv()
-
 cl_api_key = st.secrets["API_KEY"]
-
 client = anthropic.Anthropic(api_key=cl_api_key)  # reads ANTHROPIC_API_KEY from environment
 
 

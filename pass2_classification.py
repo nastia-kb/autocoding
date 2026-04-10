@@ -9,10 +9,7 @@ import anthropic
 from dataclasses import dataclass, field, asdict
 import streamlit as st
 
-from dotenv import load_dotenv
 import os
-
-load_dotenv()
 
 cl_api_key = st.secrets["API_KEY"]
 client = anthropic.Anthropic(api_key=cl_api_key)  # reads ANTHROPIC_API_KEY from environment
