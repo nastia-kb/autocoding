@@ -12,7 +12,6 @@ import pandas as pd
 import streamlit as st
 from dataclasses import asdict
 import io
-from dotenv import load_dotenv
 import os
 
 from pass1_topic_discovery import discover_topics
