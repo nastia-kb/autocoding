@@ -2,4 +2,4 @@ anthropic
 streamlit 
 pandas
 xlsxwriter
-dotenv
+openpyxl

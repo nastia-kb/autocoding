@@ -60,7 +60,7 @@ if uploaded_file:
 st.header("2 · Выделение тематик")
 
 col1, col2 = st.columns(2)
-sample_size  = col1.slider("Сколько ответов использовать в подвыборке для выделения тематик?", 10, 200, 50)
+sample_size  = col1.slider("Сколько ответов использовать в подвыборке для выделения тематик?", 50, 400, 200)
 max_topics   = col2.slider("Максимальное количество тематик", 5, 30, 15)
 
 if st.button("Начать поиск тем", disabled=not st.session_state["responses"]):
@@ -93,13 +93,6 @@ if st.session_state["topics"]:
     # Persist edits
     st.session_state["topics"] = edited.to_dict(orient="records")
 
-    # Download topic list
-    st.download_button(
-        "Скачать описание тематик (JSON)",
-        data=json.dumps({"topics": st.session_state["topics"]}, indent=2),
-        file_name="topics.json",
-        mime="application/json",
-    )
 
 # ── Step 3: Classification ────────────────────────────────────────────────────
 st.header("3 · Классификация ответов")
@@ -181,10 +174,23 @@ if st.session_state["results"]:
     freq = pd.DataFrame(Counter(all_assigned).most_common(), columns=["Topic", "Count"])
     st.bar_chart(freq.set_index("Topic"))
 
+    topics_df = pd.DataFrame(st.session_state["topics"])
+
+    binary_topics = pd.DataFrame(columns = topics_df.label)
+    for topic in binary_topics.columns:
+        binary_topics[topic] = df_results["topics_display"].str.contains(topic).map({True:1, False:0})
+
+    (binary_topics.sum(axis = 1) == 0).map({True:1, False:0})
+
+    binary_topics["Другое / Затруднились"] = (binary_topics.sum(axis = 1) == 0).map({True:1, False:0})
+
+    df_results = pd.concat([df_results, binary_topics], axis = 1)
+
     # Download results
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-        df_results.to_excel(writer)
+        df_results.to_excel(writer, sheet_name='Кодировка')
+        topics_df.to_excel(writer, sheet_name='Кодфрейм')
         writer.close()
 
     st.download_button(
