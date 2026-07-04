@@ -80,7 +80,7 @@ Survey responses:
 
     response = client.messages.create(
         model="claude-sonnet-4-6",   # Use Sonnet for discovery — nuance matters
-        max_tokens=1500,
+        max_tokens=3000,
         system=system_prompt,
         messages=[{"role": "user", "content": user_prompt}],
     )
