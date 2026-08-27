@@ -160,10 +160,9 @@ if st.session_state["results"]:
 
     st.write(f"Показано **{len(df_display)}** ответов.")
     st.dataframe(
-        df_display[["response_id", "original_text", "topics_display", "confidence"]],
+        df_display[["original_text", "topics_display", "confidence"]],
         use_container_width=True,
         column_config={
-            "response_id":    st.column_config.NumberColumn("ID", width="small"),
             "Текст":  st.column_config.TextColumn("Response", width="large"),
             "Темы": st.column_config.TextColumn("Topics"),
             "Уровень уверенности":     st.column_config.TextColumn("Confidence", width="small")
@@ -191,6 +190,7 @@ if st.session_state["results"]:
     (binary_topics.sum(axis = 1) == 0).map({True:1, False:0})
 
     binary_topics["Другое / Затруднились"] = (binary_topics.sum(axis = 1) == 0).map({True:1, False:0})
+    df_results.drop(columns = ["response_id"], inplace = True)
 
     df_results = pd.concat([ids, df_results, binary_topics], axis = 1)
 
