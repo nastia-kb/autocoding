@@ -47,7 +47,7 @@ if uploaded_file:
     df_raw = pd.read_excel(uploaded_file)
     st.write(f"Загружено **{len(df_raw)} строк**, **{len(df_raw.columns)} столбцов**.")
 
-    text_col = st.selectbox("Столбцы с открытыми ответами", df_raw.columns)
+    text_col = st.selectbox("Столбцы с открытыми ответами", df_raw.select_dtypes(include=['object', 'string']).columns)
     responses = df_raw[text_col].dropna()
     if "id" in df_raw.columns:
         ids = df_raw.loc[df_raw[text_col].notna(), "id"]
