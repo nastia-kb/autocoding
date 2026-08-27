@@ -49,6 +49,13 @@ if uploaded_file:
 
     text_col = st.selectbox("Столбцы с открытыми ответами", df_raw.columns)
     responses = df_raw[text_col].dropna()
+    if "id" in df_raw.columns:
+        ids = df_raw.loc[df_raw[text_col].notna(), "id"]
+    else:
+        ids = [i for i in range(len(responses))]
+    
+    st.session_state["ids"] = ids
+        
     responses = responses[responses.str.len() >= 2].astype(str).tolist()
     st.session_state["responses"] = responses
     st.write(f"Используем **{len(responses)} не пустых ответов**.")
@@ -175,6 +182,7 @@ if st.session_state["results"]:
     st.bar_chart(freq.set_index("Topic"))
 
     topics_df = pd.DataFrame(st.session_state["topics"])
+    ids = pd.DataFrame(st.session_state["ids"])
 
     binary_topics = pd.DataFrame(columns = topics_df.label)
     for topic in binary_topics.columns:
@@ -184,12 +192,12 @@ if st.session_state["results"]:
 
     binary_topics["Другое / Затруднились"] = (binary_topics.sum(axis = 1) == 0).map({True:1, False:0})
 
-    df_results = pd.concat([df_results, binary_topics], axis = 1)
+    df_results = pd.concat([ids, df_results, binary_topics], axis = 1)
 
     # Download results
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-        df_results.to_excel(writer, sheet_name='Кодировка')
+        df_results.to_excel(writer, sheet_name='Кодировка', index=False)
         topics_df.to_excel(writer, sheet_name='Кодфрейм')
         writer.close()
 
